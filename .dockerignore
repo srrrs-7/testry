@@ -1,0 +1,5 @@
+# The dev image copies only the manifests of the runner contract fixture;
+# sources are bind-mounted at run time.
+*
+!tests/fixtures/runners/package.json
+!tests/fixtures/runners/bun.lock

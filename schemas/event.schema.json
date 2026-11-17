@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testry.invalid/schemas/event.schema.json",
+  "title": "testry run event",
+  "description": "One line of `events.jsonl` and of `testry test|verify --format jsonl`. `seq` starts at 1 and increases by one within a run.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "run_id": {
+      "$ref": "#/$defs/run_id"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timestamp": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "type": {
+      "enum": [
+        "run_started",
+        "plan_created",
+        "selection_expanded",
+        "environment_preparing",
+        "environment_ready",
+        "task_started",
+        "task_finished",
+        "cleanup_started",
+        "cleanup_finished",
+        "run_finished"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "seq",
+    "timestamp",
+    "type",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "const": "run_started"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "enum": [
+                "affected",
+                "full",
+                "shadow"
+              ]
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "plan_created"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "plan_id": {
+              "$ref": "#/$defs/fingerprint"
+            }
+          },
+          "required": [
+            "plan_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "selection_expanded"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "suite_id": {
+              "$ref": "#/$defs/identifier"
+            },
+            "from": {
+              "enum": [
+                "all",
+                "files",
+                "omit"
+              ]
+            },
+            "to": {
+              "enum": [
+                "all",
+                "files",
+                "omit"
+              ]
+            },
+            "reason_code": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "suite_id",
+            "from",
+            "to",
+            "reason_code"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "environment_preparing"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "enum": [
+                "host",
+                "devcontainer_cli"
+              ]
+            }
+          },
+          "required": [
+            "provider"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "environment_ready"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "enum": [
+                "host",
+                "devcontainer_cli"
+              ]
+            }
+          },
+          "required": [
+            "provider"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "task_started"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "$ref": "#/$defs/identifier"
+            }
+          },
+          "required": [
+            "task_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "task_finished"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "$ref": "#/$defs/identifier"
+            },
+            "outcome": {
+              "enum": [
+                "passed",
+                "failed",
+                "skipped",
+                "flaky",
+                "timed_out",
+                "cancelled",
+                "infrastructure_error"
+              ]
+            }
+          },
+          "required": [
+            "task_id",
+            "outcome"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "cleanup_started"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "cleanup_finished"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "complete"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "run_finished"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "outcome": {
+              "enum": [
+                "passed",
+                "failed",
+                "no_work",
+                "invalidated",
+                "cancelled",
+                "infrastructure_error"
+              ]
+            },
+            "exit_code": {
+              "enum": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                130
+              ]
+            }
+          },
+          "required": [
+            "outcome",
+            "exit_code"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    }
+  }
+}

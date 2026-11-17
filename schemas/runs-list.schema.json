@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testry.invalid/schemas/runs-list.schema.json",
+  "title": "testry runs list",
+  "description": "Output of `testry runs list --format json`: the runs in the history of a workspace, newest first.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "$ref": "#/$defs/run_id"
+          },
+          "plan_id": {
+            "$ref": "#/$defs/fingerprint"
+          },
+          "mode": {
+            "enum": [
+              "affected",
+              "full",
+              "shadow"
+            ]
+          },
+          "state": {
+            "enum": [
+              "finished",
+              "interrupted",
+              "running",
+              "artifacts_missing"
+            ]
+          },
+          "outcome": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "no_work",
+                  "invalidated",
+                  "cancelled",
+                  "infrastructure_error"
+                ]
+              }
+            ]
+          },
+          "exit_code": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "enum": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  130
+                ]
+              }
+            ]
+          },
+          "assurance": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "enum": [
+                  "full_suite",
+                  "advisory"
+                ]
+              }
+            ]
+          },
+          "started_at": {
+            "$ref": "#/$defs/timestamp"
+          },
+          "finished_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/timestamp"
+              }
+            ]
+          },
+          "total_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "run_id",
+          "plan_id",
+          "mode",
+          "state",
+          "outcome",
+          "exit_code",
+          "assurance",
+          "started_at",
+          "finished_at",
+          "total_ms"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "description": "Only a finished run has a result. An interrupted run never has an outcome.",
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "finished"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "outcome": {
+                  "enum": [
+                    "passed",
+                    "failed",
+                    "no_work",
+                    "invalidated",
+                    "cancelled",
+                    "infrastructure_error"
+                  ]
+                },
+                "exit_code": {
+                  "enum": [
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    130
+                  ]
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "outcome": {
+                  "type": "null"
+                },
+                "exit_code": {
+                  "type": "null"
+                },
+                "assurance": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "runs"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    }
+  }
+}

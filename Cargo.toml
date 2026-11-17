@@ -1,0 +1,61 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/testry-domain",
+    "crates/testry-application",
+    "crates/testry-adapters",
+    "crates/testry-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.100"
+publish = false
+
+# Versions were verified against crates.io on 2026-11-17 and are locked in
+# Cargo.lock. Do not bump them without re-running the compatibility checks.
+[workspace.dependencies]
+testry-domain = { path = "crates/testry-domain" }
+testry-application = { path = "crates/testry-application" }
+testry-adapters = { path = "crates/testry-adapters" }
+
+blake3 = "1.8.7"
+clap = { version = "4.6.8", features = ["derive"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["std"] }
+globset = "0.4.21"
+# Test-only: validates real output against the bundled JSON Schemas. Without
+# default features it resolves no remote references and has no TLS stack.
+jsonschema = { version = "0.61.2", default-features = false }
+nix = { version = "0.32.0", default-features = false, features = ["signal"] }
+oxc_allocator = "0.159.0"
+oxc_ast = "0.159.0"
+oxc_ast_visit = "0.159.0"
+oxc_parser = "0.159.0"
+oxc_resolver = "11.24.3"
+oxc_span = "0.159.0"
+proptest = "1.12.0"
+quick-xml = "0.42.0"
+# SQLite is compiled from the bundled source: the version is pinned with the
+# crate, and no system library is needed in the image.
+rusqlite = { version = "0.43.0", default-features = false, features = ["bundled"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tempfile = "3.27.0"
+thiserror = "2.0.21"
+tokio = "1.54.1"
+toml = "1.2.1"
+uuid = { version = "1.29.3", features = ["v4"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+# Spec section 3: no unwrap/expect/panic as ordinary error handling in
+# production code. Test code is exempted through clippy.toml.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"

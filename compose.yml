@@ -1,0 +1,28 @@
+# Development container for testry.
+#
+# All cargo/rustc/git-in-tests execution happens in this service; the host only
+# runs the container engine. Use the Makefile targets rather than calling
+# compose directly.
+name: testry
+
+services:
+  dev:
+    build:
+      context: .
+      target: dev
+    image: testry-dev:local
+    init: true
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - cargo-home:/home/dev/.cargo
+      - cargo-target:/var/cache/testry/target
+      # User state of testry (trust approvals). It lives outside the workspace
+      # on purpose: a repository must not be able to approve itself.
+      - testry-state:/home/dev/.local/state
+    command: ["bash"]
+
+volumes:
+  cargo-home:
+  cargo-target:
+  testry-state:

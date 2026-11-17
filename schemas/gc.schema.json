@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testry.invalid/schemas/gc.schema.json",
+  "title": "testry gc",
+  "description": "Output of `testry gc --dry-run|--apply --format json`. A dry run changes nothing; its `removed_*` lists are empty and `history` is null.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "mode": {
+      "enum": [
+        "dry_run",
+        "apply"
+      ]
+    },
+    "retention_days": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cutoff": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "run_active": {
+      "type": "boolean"
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "$ref": "#/$defs/run_id"
+          },
+          "state": {
+            "enum": [
+              "finished",
+              "interrupted",
+              "unverified"
+            ]
+          },
+          "ended_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/timestamp"
+              }
+            ]
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "action": {
+            "enum": [
+              "keep",
+              "delete"
+            ]
+          },
+          "reason": {
+            "enum": [
+              "older_than_retention",
+              "within_retention",
+              "no_valid_start_record"
+            ]
+          }
+        },
+        "required": [
+          "run_id",
+          "state",
+          "ended_at",
+          "bytes",
+          "action",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "description": "A directory that is not proven to be a run is never removed.",
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "unverified"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "action": {
+                  "const": "keep"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "plan_id": {
+            "$ref": "#/$defs/fingerprint"
+          },
+          "modified_at": {
+            "$ref": "#/$defs/timestamp"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "action": {
+            "enum": [
+              "keep",
+              "delete"
+            ]
+          },
+          "reason": {
+            "enum": [
+              "older_than_retention_and_unreferenced",
+              "referenced_by_a_kept_run",
+              "within_retention"
+            ]
+          }
+        },
+        "required": [
+          "plan_id",
+          "modified_at",
+          "bytes",
+          "action",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unmanaged": {
+      "description": "Entries testry does not own. They are never removed.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "leftover_processes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "$ref": "#/$defs/run_id"
+          },
+          "pid": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "would_stop",
+              "stopped",
+              "still_running"
+            ]
+          }
+        },
+        "required": [
+          "run_id",
+          "pid",
+          "name",
+          "action"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "history": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "completed": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/run_id"
+              }
+            },
+            "interrupted": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/run_id"
+              }
+            },
+            "removed": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/run_id"
+              }
+            }
+          },
+          "required": [
+            "completed",
+            "interrupted",
+            "removed"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "removed_runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/run_id"
+      }
+    },
+    "removed_plans": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fingerprint"
+      }
+    },
+    "freed_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "mode",
+    "retention_days",
+    "cutoff",
+    "run_active",
+    "runs",
+    "plans",
+    "unmanaged",
+    "leftover_processes",
+    "history",
+    "removed_runs",
+    "removed_plans",
+    "freed_bytes",
+    "failures"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "dry_run"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "history": {
+            "type": "null"
+          },
+          "removed_runs": {
+            "maxItems": 0
+          },
+          "removed_plans": {
+            "maxItems": 0
+          },
+          "leftover_processes": {
+            "items": {
+              "properties": {
+                "action": {
+                  "const": "would_stop"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    }
+  }
+}

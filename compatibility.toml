@@ -1,0 +1,102 @@
+# Exact versions testry was verified against, and what each runner adapter
+# supports for them (spec section 2, "runner versions").
+#
+# Only combinations that were actually executed are listed as verified.
+# `crates/testry-cli/tests/compatibility.rs` fails when this file disagrees
+# with the adapters, the Dockerfile, rust-toolchain.toml or the runner
+# fixture, so the record cannot drift from what the tests run.
+#
+# A runner version that is not listed here is not refused: the adapter runs
+# the whole suite instead of selected files (it widens, it never narrows).
+schema_version = 1
+verified_on = "2026-11-17"
+
+[platform]
+os = "linux"
+arch = "aarch64"
+image = "rust:1.100.0-slim-trixie"
+
+[toolchain]
+rust = "1.100.0"
+
+# Runtimes of the dev image. Bun runs `bun test`; Vitest, Storybook and
+# Playwright run on Node. The browser is the Chromium headless shell that
+# Playwright 1.65.1 installs.
+[runtimes]
+bun = "1.4.4"
+node = "26.13.1"
+
+[runners.bun]
+status = "verified"
+verified_versions = ["1.4.4"]
+runtime = "bun"
+report = "junit_xml"
+full_run = true
+file_selection = true
+file_attribution = true
+structured_report = true
+worker_control = false
+
+[runners.vitest]
+status = "verified"
+verified_versions = ["5.1.0"]
+runtime = "node"
+report = "json"
+full_run = true
+file_selection = true
+file_attribution = true
+structured_report = true
+worker_control = true
+
+# Stories run through the Storybook Vitest addon as one whole Vitest project
+# in browser mode. The version testry probes at run time is the one of
+# Vitest; the Storybook packages are the ones the contract tests ran with.
+[runners.storybook_vitest]
+status = "verified"
+verified_versions = ["5.1.0"]
+runtime = "node"
+report = "json"
+full_run = true
+file_selection = false
+file_attribution = true
+structured_report = true
+worker_control = true
+[runners.storybook_vitest.packages]
+storybook = "10.6.7"
+"@storybook/addon-vitest" = "10.6.7"
+"@storybook/html-vite" = "10.6.7"
+"@vitest/browser" = "5.1.0"
+"@vitest/browser-playwright" = "5.1.0"
+vite = "8.3.8"
+playwright = "1.65.1"
+
+# Always the whole suite: positional arguments are regular expressions.
+[runners.playwright]
+status = "verified"
+verified_versions = ["1.65.1"]
+runtime = "node"
+report = "json"
+full_run = true
+file_selection = false
+file_attribution = true
+structured_report = true
+worker_control = true
+
+# Success or failure of the command only: no test counts, no file selection.
+[runners.command]
+status = "verified"
+verified_versions = []
+report = "none"
+full_run = true
+file_selection = false
+file_attribution = false
+structured_report = false
+worker_control = false
+
+[environments.host]
+status = "verified"
+
+# Not implemented by decision (ADR-0006): testry runs inside the project's
+# container and starts tests as processes there. It creates no containers.
+[environments.devcontainer_cli]
+status = "unsupported"

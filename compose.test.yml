@@ -1,0 +1,47 @@
+# Quality gates for testry itself (spec section 19).
+#
+# These services reuse the dev image and the cargo volumes of compose.yml.
+# They run without network access: dependencies must already be fetched
+# (`make fetch`), so a gate cannot silently download anything.
+name: testry
+
+x-gate: &gate
+  image: testry-dev:local
+  init: true
+  working_dir: /workspace
+  network_mode: none
+  volumes:
+    - .:/workspace
+    - cargo-home:/home/dev/.cargo
+    - cargo-target:/var/cache/testry/target
+
+services:
+  fmt:
+    <<: *gate
+    command: ["cargo", "fmt", "--all", "--", "--check"]
+
+  clippy:
+    <<: *gate
+    command:
+      ["cargo", "clippy", "--workspace", "--all-targets", "--locked", "--offline", "--", "-D", "warnings"]
+
+  test:
+    <<: *gate
+    command: ["cargo", "test", "--workspace", "--locked", "--offline"]
+
+  # Benchmarks (spec section 20). Not a gate: it measures, it does not judge.
+  # Without network, so no measurement can include a download.
+  bench:
+    <<: *gate
+    environment:
+      BENCH_RUNS: "${BENCH_RUNS:-30}"
+      BENCH_WARMUP: "${BENCH_WARMUP:-3}"
+      BENCH_SIZES: "${BENCH_SIZES:-100,1000,5000}"
+    command:
+      - sh
+      - -c
+      - cargo build --release --locked --offline -p testry-cli && bun run scripts/bench.ts
+
+volumes:
+  cargo-home:
+  cargo-target:

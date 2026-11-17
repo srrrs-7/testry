@@ -1,0 +1,552 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testry.invalid/schemas/result.schema.json",
+  "title": "testry run result",
+  "description": "Output of `testry test|verify --format json`, of `testry runs show` for a finished run, and the content of `result.json`, the terminal record of a run.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "run_id": {
+      "$ref": "#/$defs/run_id"
+    },
+    "plan_id": {
+      "$ref": "#/$defs/fingerprint"
+    },
+    "mode": {
+      "enum": [
+        "affected",
+        "full",
+        "shadow"
+      ]
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identifier"
+      },
+      "minItems": 1
+    },
+    "assurance": {
+      "description": "`full_suite` only when every registered suite ran in full on unchanged inputs and cleanup completed.",
+      "enum": [
+        "full_suite",
+        "advisory"
+      ]
+    },
+    "outcome": {
+      "enum": [
+        "passed",
+        "failed",
+        "no_work",
+        "invalidated",
+        "cancelled",
+        "infrastructure_error"
+      ]
+    },
+    "exit_code": {
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        130
+      ]
+    },
+    "input_validation": {
+      "enum": [
+        "unchanged",
+        "changed",
+        "not_checked"
+      ]
+    },
+    "environment": {
+      "description": "`null` when no environment was prepared.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "enum": [
+                "host",
+                "devcontainer_cli"
+              ]
+            },
+            "os": {
+              "type": "string"
+            },
+            "arch": {
+              "type": "string"
+            },
+            "fingerprint": {
+              "$ref": "#/$defs/fingerprint"
+            },
+            "tool_versions": {
+              "description": "Versions read from the installed runners before the first suite started.",
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "image": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "provider",
+            "os",
+            "arch",
+            "fingerprint",
+            "tool_versions",
+            "image"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "suites": {
+      "description": "Suites that were started. A planned suite that was not started is absent.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/suite"
+      }
+    },
+    "shadow": {
+      "description": "Shadow runs only.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "gap_candidates": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "suite_id": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "file": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "$ref": "#/$defs/repo_path"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "suite_id",
+                  "file"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "gap_candidates"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "planning_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "environment_ready_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_failure_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "verification_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cleanup_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "planning_ms",
+        "environment_ready_ms",
+        "first_failure_ms",
+        "verification_ms",
+        "cleanup_ms",
+        "total_ms"
+      ],
+      "additionalProperties": false
+    },
+    "cleanup": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "enum": [
+            "succeeded",
+            "failed"
+          ]
+        },
+        "residual_resources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "outcome",
+        "residual_resources"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "plan_id",
+    "mode",
+    "scope",
+    "assurance",
+    "outcome",
+    "exit_code",
+    "input_validation",
+    "environment",
+    "suites",
+    "shadow",
+    "metrics",
+    "cleanup"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "Only exit code 0 is a pass.",
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "passed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exit_code": {
+            "const": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "exit_code": {
+            "not": {
+              "const": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "No work is exit code 4 and has no suites.",
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "no_work"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exit_code": {
+            "const": 4
+          },
+          "suites": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "repo_path": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "^/|(^|/)\\.\\.(/|$)|\\u0000"
+      }
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "selection": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "all"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "files"
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "kind",
+            "files"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "omit"
+            },
+            "reason": {
+              "enum": [
+                "no_changes",
+                "only_non_test_inputs_changed",
+                "no_affected_tests"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "suite": {
+      "type": "object",
+      "properties": {
+        "suite_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "runner": {
+          "enum": [
+            "bun",
+            "vitest",
+            "storybook_vitest",
+            "playwright",
+            "command"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "passed",
+            "failed",
+            "skipped",
+            "flaky",
+            "timed_out",
+            "cancelled",
+            "infrastructure_error"
+          ]
+        },
+        "selection": {
+          "description": "What really ran, after any widening at run time.",
+          "$ref": "#/$defs/selection"
+        },
+        "file_attribution": {
+          "enum": [
+            "known",
+            "unknown"
+          ]
+        },
+        "executed_files": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/repo_path"
+          }
+        },
+        "counts": {
+          "description": "`null` when the runner cannot count tests. Unknown is never written as zero.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "passed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "failed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "skipped": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "flaky": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "passed",
+                "failed",
+                "skipped",
+                "flaky"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "report": {
+          "description": "Path of the runner's report, relative to the run directory.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "anomalies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "policy_findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "fails_suite": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "code",
+              "detail",
+              "fails_suite"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "suite_id",
+        "runner",
+        "outcome",
+        "selection",
+        "file_attribution",
+        "executed_files",
+        "counts",
+        "attempts",
+        "duration_ms",
+        "report",
+        "anomalies",
+        "policy_findings"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "file_attribution": {
+                "const": "unknown"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "executed_files": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "executed_files": {
+                "type": "array"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

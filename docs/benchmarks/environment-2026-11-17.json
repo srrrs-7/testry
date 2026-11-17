@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-17",
+  "runs_per_measurement": 30,
+  "warmup_runs": 3,
+  "planning_sizes": [
+    100,
+    1000,
+    5000
+  ],
+  "testry_binary": "release build",
+  "testry": "testry 0.1.0",
+  "rustc": "rustc 1.100.0 (0ef1bc386 2026-11-09)",
+  "bun": "1.4.4",
+  "node": "v26.13.1",
+  "vitest": "5.1.0",
+  "git": "git version 2.47.3",
+  "kernel": "Linux 6.8.0-147-generic aarch64",
+  "cpus_online": 8,
+  "memory_total_kib": 12220976,
+  "container": "dev image of this repository (compose service `bench`, no network)",
+  "caches": "file system cache warm (warm-up runs precede every measurement); testry keeps no cache of its own between runs; no warm pool exists"
+}

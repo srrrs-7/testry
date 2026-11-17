@@ -1,0 +1,560 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testry.invalid/schemas/plan.schema.json",
+  "title": "testry execution plan",
+  "description": "Output of `testry plan --format json` and the stored plan documents. The plan ID is the fingerprint of the document without `schema_version` and `plan_id`; a document that was edited no longer matches its ID and is rejected by `testry explain`.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "plan_id": {
+      "$ref": "#/$defs/fingerprint"
+    },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^ws-[0-9a-z-]+$"
+    },
+    "snapshot_id": {
+      "$ref": "#/$defs/fingerprint"
+    },
+    "baseline_commit": {
+      "description": "The commit the changes are measured against. `null` for `full`, which needs none.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"
+    },
+    "config_digest": {
+      "$ref": "#/$defs/fingerprint"
+    },
+    "mode": {
+      "enum": [
+        "affected",
+        "full",
+        "shadow"
+      ]
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identifier"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "scope_limited": {
+      "description": "Whether `--suite` limited the request. A limited plan is never a quality gate.",
+      "type": "boolean"
+    },
+    "assurance": {
+      "enum": [
+        "full_suite",
+        "advisory"
+      ]
+    },
+    "changed_paths": {
+      "description": "`null` when no diff was computed (`full`). An empty list means a diff was computed and nothing changed.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/$defs/repo_path"
+      }
+    },
+    "suites": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/suite_plan"
+      }
+    },
+    "fallbacks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fallback_reason"
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "cpu_slots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_mib": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_parallel_suites": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "cpu_slots",
+        "memory_mib",
+        "max_parallel_suites"
+      ],
+      "additionalProperties": false
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "snapshot",
+              "graph"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "path": {
+            "$ref": "#/$defs/repo_path"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "code",
+          "path",
+          "detail"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "plan_id",
+    "workspace_id",
+    "snapshot_id",
+    "baseline_commit",
+    "config_digest",
+    "mode",
+    "scope",
+    "scope_limited",
+    "assurance",
+    "changed_paths",
+    "suites",
+    "fallbacks",
+    "resources",
+    "diagnostics"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "repo_path": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "^/|(^|/)\\.\\.(/|$)|\\u0000"
+      }
+    },
+    "selection": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "all"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "files"
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "kind",
+            "files"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "omit"
+            },
+            "reason": {
+              "enum": [
+                "no_changes",
+                "only_non_test_inputs_changed",
+                "no_affected_tests"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "selection_reason": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "full_verification"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "always_run"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "whole_suite_policy"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "direct_change"
+            },
+            "path": {
+              "$ref": "#/$defs/repo_path"
+            }
+          },
+          "required": [
+            "code",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "transitive_dependency"
+            },
+            "dependency_path": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "minItems": 2
+            }
+          },
+          "required": [
+            "code",
+            "dependency_path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "declared_input_changed"
+            },
+            "path": {
+              "$ref": "#/$defs/repo_path"
+            },
+            "pattern": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "path",
+            "pattern"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "expanded_by_fallback"
+            },
+            "fallback": {
+              "enum": [
+                "global_input_changed",
+                "unknown_dependency",
+                "no_related_tests"
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "fallback"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "unsupported_capability"
+            },
+            "capability": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "capability"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "no_changes"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "only_non_test_inputs_changed"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "no_affected_tests"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "fallback_reason": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "global_input_changed"
+            },
+            "path": {
+              "$ref": "#/$defs/repo_path"
+            },
+            "pattern": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "path",
+            "pattern"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "unknown_dependency"
+            },
+            "diagnostics": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "code",
+            "diagnostics"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "const": "no_related_tests"
+            },
+            "path": {
+              "$ref": "#/$defs/repo_path"
+            }
+          },
+          "required": [
+            "code",
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "suite_plan": {
+      "type": "object",
+      "properties": {
+        "suite_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "runner": {
+          "enum": [
+            "bun",
+            "vitest",
+            "storybook_vitest",
+            "playwright",
+            "command"
+          ]
+        },
+        "project": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "requested_selection": {
+          "$ref": "#/$defs/selection"
+        },
+        "effective_selection": {
+          "description": "What will run. Never narrower than the requested selection.",
+          "$ref": "#/$defs/selection"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/selection_reason"
+          },
+          "minItems": 1
+        },
+        "candidate": {
+          "description": "Shadow plans only: what `affected` would have selected.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "selection": {
+                  "$ref": "#/$defs/selection"
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/selection_reason"
+                  }
+                }
+              },
+              "required": [
+                "selection",
+                "reasons"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "capability_verification": {
+          "description": "`pending`: the file selection needs a runner version that is only checked when the plan is executed.",
+          "enum": [
+            "not_required",
+            "pending"
+          ]
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "cpu_slots": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "memory_mib": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "exclusive": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "cpu_slots",
+            "memory_mib",
+            "exclusive"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "suite_id",
+        "runner",
+        "project",
+        "requested_selection",
+        "effective_selection",
+        "reasons",
+        "candidate",
+        "capability_verification",
+        "resources"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

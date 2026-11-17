@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testry.invalid/schemas/error.schema.json",
+  "title": "testry error",
+  "description": "stdout of a command that failed before it produced its own document, with `--format json`. The message never contains secrets or raw environment variables; `code` is stable and machine-readable.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z_]+$"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "error"
+  ],
+  "additionalProperties": false,
+  "$defs": {}
+}

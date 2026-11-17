@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="bun test" tests="9" assertions="3" failures="1" skipped="3" time="0.006882351">
+  <testsuite name="src/failing.test.ts" file="src/failing.test.ts" tests="2" assertions="1" failures="1" skipped="0" time="0.00249717" hostname="3d47cf9af25e">
+    <testcase name="fails" classname="" time="0.000651" file="src/failing.test.ts" line="2" assertions="1">
+      <failure type="AssertionError" message="expect(received).toBe(expected)&#10;&#10;Expected: 2&#10;Received: 1&#10;">AssertionError: expect(received).toBe(expected)&#10;&#10;Expected: 2&#10;Received: 1&#10;&#10;      at src/failing.test.ts:2:33&#10;</failure>
+    </testcase>
+    <testcase name="passes &lt;&amp;&quot;quote&quot;&gt;" classname="" time="0.000102" file="src/failing.test.ts" line="3" assertions="0" />
+  </testsuite>
+  <testsuite name="src/math.test.ts" file="src/math.test.ts" tests="2" assertions="2" failures="0" skipped="0" time="0.000399869" hostname="3d47cf9af25e">
+    <testsuite name="math" file="src/math.test.ts" line="2" tests="2" assertions="2" failures="0" skipped="0" time="0" hostname="3d47cf9af25e">
+      <testsuite name="add" file="src/math.test.ts" line="3" tests="1" assertions="1" failures="0" skipped="0" time="0" hostname="3d47cf9af25e">
+        <testcase name="adds" classname="add &gt; math" time="0.000013" file="src/math.test.ts" line="3" assertions="1" />
+      </testsuite>
+      <testcase name="subtracts" classname="math" time="0.000005" file="src/math.test.ts" line="4" assertions="1" />
+    </testsuite>
+  </testsuite>
+  <testsuite name="src/skips.test.ts" file="src/skips.test.ts" tests="4" assertions="0" failures="0" skipped="3" time="0.000108165" hostname="3d47cf9af25e">
+    <testcase name="skipped one" classname="" time="0" file="src/skips.test.ts" line="2" assertions="0">
+      <skipped />
+    </testcase>
+    <testcase name="todo one" classname="" time="0" file="src/skips.test.ts" line="3" assertions="0">
+      <skipped message="TODO" />
+    </testcase>
+    <testsuite name="group" file="src/skips.test.ts" line="4" tests="1" assertions="0" failures="0" skipped="1" time="0" hostname="3d47cf9af25e">
+      <testcase name="nested skip" classname="group" time="0" file="src/skips.test.ts" line="4" assertions="0">
+        <skipped />
+      </testcase>
+    </testsuite>
+    <testcase name="ok" classname="" time="0.000011" file="src/skips.test.ts" line="5" assertions="0" />
+  </testsuite>
+  <testsuite name="src/with space/日本語 [x].test.ts" file="src/with space/日本語 [x].test.ts" tests="1" assertions="0" failures="0" skipped="0" time="0.000086665" hostname="3d47cf9af25e">
+    <testcase name="unicode path" classname="" time="0.000002" file="src/with space/日本語 [x].test.ts" line="2" assertions="0" />
+  </testsuite>
+</testsuites>

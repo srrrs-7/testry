@@ -1,0 +1,11 @@
+# Rust build output (the containers use a named volume, this is a safety net)
+/target/
+
+# testry runtime state: plans, runs, caches, locks. Never commit.
+.testry/
+
+# Editor / OS noise
+.DS_Store
+*.swp
+.idea/
+.vscode/

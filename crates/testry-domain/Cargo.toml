@@ -1,0 +1,23 @@
+[package]
+name = "testry-domain"
+description = "Pure domain model of testry: value objects, graph model, selection rules, state transitions."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+# Only pure computation crates are allowed here. The architecture test in
+# testry-cli fails if an async runtime, CLI, parser, container or database
+# crate becomes reachable from this crate.
+[dependencies]
+blake3 = { workspace = true }
+globset = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[lints]
+workspace = true

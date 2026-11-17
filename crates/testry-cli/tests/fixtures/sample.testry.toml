@@ -1,0 +1,156 @@
+# Sample configuration for a Bun / Hono / React / Vite / Storybook / Playwright
+# monorepo. This is the sample of spec section 15 with the names of this
+# project (testry.toml, .testry). Paths, Vitest project names and commands
+# must be adapted to the target repository.
+schema_version = 1
+
+[workspace]
+root = "."
+# Runtime outputs only. These are not proof that other ignored files are irrelevant.
+exclude = [".git/**", ".testry/**", "**/node_modules/**"]
+# Explicitly reviewed documentation-only paths. Keep empty by default.
+non_test_inputs = []
+
+[analysis]
+language = "typescript_javascript"
+granularity = "file"
+parser = "oxc"
+resolver = "oxc"
+unknown_dependency = "all_enabled_suites"
+global_inputs = [
+  "testry.toml",
+  "**/package.json",
+  "**/bun.lock", "**/bun.lockb",
+  "**/package-lock.json", "**/pnpm-lock.yaml", "**/yarn.lock",
+  "**/tsconfig*.json",
+  "**/vite.config.*", "**/vitest.config.*", "**/bunfig.toml",
+  "**/playwright.config.*",
+  ".storybook/**", "**/.storybook/**",
+  ".devcontainer/**",
+  "**/Dockerfile*", "**/compose*.yaml", "**/compose*.yml",
+  "openapi/**", "schemas/**",
+  "**/.env", "**/.env.*"
+]
+
+[execution]
+default_environment = "local"
+cpu_slots = 4
+memory_budget_mib = 4096
+max_parallel_suites = 2
+default_timeout_seconds = 600
+termination_grace_seconds = 5
+cleanup_timeout_seconds = 30
+fail_fast = false
+max_log_bytes_per_stream = 16777216
+
+[policy]
+local_default_mode = "affected"
+ci_default_mode = "full"
+allow_result_cache = false
+allow_ai_test_exclusion = false
+fail_on_unexpected_skips = true
+fail_on_flaky = true
+
+[storage]
+directory = ".testry"
+# `testry gc --apply` removes runs that ended longer ago than this.
+history_retention_days = 14
+
+[environments.local]
+provider = "host"
+# Logical scheduling reservations, not host resource isolation.
+network = "inherit"
+
+# The configuration contract accepts this provider, but testry does not
+# implement it (docs/adr/0006-no-dev-container-provider.md): selecting this
+# environment stops with exit code 2. Tests run in the `host` environment,
+# as processes inside the container testry itself runs in.
+[environments.colima]
+provider = "devcontainer_cli"
+docker_context = "colima"
+config = ".devcontainer/devcontainer.json"
+lifecycle = "disposable"
+allow_initialize_command = false
+# Commands run after the reference CLI reports setup completion.
+# This sample only checks tools; application readiness belongs in the project config.
+readiness_commands = [["bun", "--version"], ["node", "--version"]]
+
+[[suites]]
+id = "api-unit"
+runner = "bun"
+cwd = "."
+command = ["bun", "test"]
+include = ["apps/api/**/*.test.ts", "apps/api/**/*.spec.ts"]
+inputs = ["apps/api/**", "packages/**"]
+selection = "file_graph"
+always_run = false
+timeout_seconds = 120
+[suites.resources]
+cpu_slots = 1
+memory_mib = 512
+exclusive = []
+
+[[suites]]
+id = "web-unit"
+runner = "vitest"
+cwd = "."
+command = ["node", "./node_modules/vitest/vitest.mjs", "run"]
+project = "unit"
+include = ["apps/web/**/*.test.ts", "apps/web/**/*.test.tsx"]
+inputs = ["apps/web/**", "packages/**"]
+selection = "file_graph"
+always_run = false
+workers = 1
+timeout_seconds = 180
+[suites.resources]
+cpu_slots = 1
+memory_mib = 768
+exclusive = []
+
+[[suites]]
+id = "storybook"
+runner = "storybook_vitest"
+cwd = "."
+command = ["node", "./node_modules/vitest/vitest.mjs", "run"]
+project = "storybook"
+include = ["apps/web/**/*.stories.ts", "apps/web/**/*.stories.tsx"]
+inputs = ["apps/web/**", "packages/**", ".storybook/**"]
+selection = "whole_suite"
+always_run = false
+workers = 1
+timeout_seconds = 300
+[suites.resources]
+cpu_slots = 1
+memory_mib = 1024
+exclusive = ["browser-budget"]
+
+[[suites]]
+id = "e2e"
+runner = "playwright"
+cwd = "."
+command = ["node", "./node_modules/@playwright/test/cli.js", "test"]
+include = ["tests/e2e/**/*.spec.ts"]
+inputs = ["apps/**", "packages/**", "tests/e2e/**"]
+selection = "whole_suite"
+always_run = false
+workers = 1
+timeout_seconds = 600
+[suites.resources]
+cpu_slots = 1
+memory_mib = 1536
+exclusive = ["browser-budget", "test-database"]
+
+[[suites]]
+id = "typecheck"
+runner = "command"
+cwd = "."
+command = ["bun", "run", "typecheck"]
+include = []
+inputs = ["apps/**", "packages/**", "**/tsconfig*.json"]
+selection = "whole_suite"
+always_run = true
+timeout_seconds = 180
+[suites.resources]
+cpu_slots = 1
+memory_mib = 768
+exclusive = []

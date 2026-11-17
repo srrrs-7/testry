@@ -1,0 +1,6 @@
+# Exact stable toolchain, verified on 2026-11-17 with the official
+# rust:1.100.0-slim-trixie image. Keep in sync with RUST_VERSION in Dockerfile.
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

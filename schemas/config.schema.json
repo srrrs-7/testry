@@ -1,0 +1,476 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://testry.invalid/schemas/config.schema.json",
+  "title": "testry.toml",
+  "description": "The structure of `testry.toml`, as the JSON data model of the TOML document. Unknown keys are errors. Rules that relate several values (for example `workers` against `cpu_slots`, or a suite larger than the budget) are checked by testry and are not all expressible here.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "workspace": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "const": "."
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "non_test_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "analysis": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "const": "typescript_javascript"
+        },
+        "granularity": {
+          "const": "file"
+        },
+        "parser": {
+          "const": "oxc"
+        },
+        "resolver": {
+          "const": "oxc"
+        },
+        "unknown_dependency": {
+          "const": "all_enabled_suites"
+        },
+        "global_inputs": {
+          "description": "A change of a matching file widens every suite to a whole run.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "global_inputs"
+      ],
+      "additionalProperties": false
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "default_environment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cpu_slots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_budget_mib": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_parallel_suites": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "default_timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "termination_grace_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cleanup_timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fail_fast": {
+          "type": "boolean"
+        },
+        "max_log_bytes_per_stream": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "default_environment",
+        "cpu_slots",
+        "memory_budget_mib"
+      ],
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "local_default_mode": {
+          "enum": [
+            "affected",
+            "full",
+            "shadow"
+          ]
+        },
+        "ci_default_mode": {
+          "description": "Must be a mode that can gate.",
+          "enum": [
+            "full",
+            "shadow"
+          ]
+        },
+        "allow_result_cache": {
+          "const": false
+        },
+        "allow_ai_test_exclusion": {
+          "const": false
+        },
+        "fail_on_unexpected_skips": {
+          "type": "boolean"
+        },
+        "fail_on_flaky": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "history_retention_days": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "environments": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "const": "host"
+              },
+              "network": {
+                "const": "inherit"
+              }
+            },
+            "required": [
+              "provider"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "description": "Accepted by the configuration, refused at execution: testry does not implement the Dev Container provider.",
+                "const": "devcontainer_cli"
+              },
+              "docker_context": {
+                "type": "string",
+                "minLength": 1
+              },
+              "config": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lifecycle": {
+                "const": "disposable"
+              },
+              "allow_initialize_command": {
+                "type": "boolean"
+              },
+              "readiness_commands": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                }
+              }
+            },
+            "required": [
+              "provider",
+              "docker_context",
+              "config"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "suites": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/suite"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "workspace",
+    "analysis",
+    "execution",
+    "environments"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "suite": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "runner": {
+          "enum": [
+            "bun",
+            "vitest",
+            "storybook_vitest",
+            "playwright",
+            "command"
+          ]
+        },
+        "cwd": {
+          "type": "string",
+          "minLength": 1
+        },
+        "command": {
+          "description": "Fixed argv. Never a shell string; `npx` / `bunx` style launchers are refused.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "project": {
+          "type": "string",
+          "minLength": 1
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "selection": {
+          "enum": [
+            "file_graph",
+            "whole_suite"
+          ]
+        },
+        "always_run": {
+          "type": "boolean"
+        },
+        "workers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "cpu_slots": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "memory_mib": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "exclusive": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "cpu_slots",
+            "memory_mib"
+          ],
+          "additionalProperties": false
+        },
+        "known_skips": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "project": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title_path": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "expected_status": {
+                "enum": [
+                  "skipped",
+                  "todo",
+                  "expected_failure"
+                ]
+              }
+            },
+            "required": [
+              "file",
+              "title_path",
+              "expected_status"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "id",
+        "runner",
+        "command",
+        "selection",
+        "resources"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "description": "File selection exists for Bun and Vitest only.",
+          "if": {
+            "properties": {
+              "selection": {
+                "const": "file_graph"
+              }
+            },
+            "required": [
+              "selection"
+            ]
+          },
+          "then": {
+            "properties": {
+              "runner": {
+                "enum": [
+                  "bun",
+                  "vitest"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "description": "A stories suite is exactly one Vitest project.",
+          "if": {
+            "properties": {
+              "runner": {
+                "const": "storybook_vitest"
+              }
+            },
+            "required": [
+              "runner"
+            ]
+          },
+          "then": {
+            "required": [
+              "project"
+            ]
+          }
+        },
+        {
+          "description": "Runners whose workers testry sets need `workers`; the others must not have it.",
+          "if": {
+            "properties": {
+              "runner": {
+                "enum": [
+                  "vitest",
+                  "storybook_vitest",
+                  "playwright"
+                ]
+              }
+            },
+            "required": [
+              "runner"
+            ]
+          },
+          "then": {
+            "required": [
+              "workers"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "workers"
+              ]
+            }
+          }
+        },
+        {
+          "description": "A test suite needs at least one include pattern.",
+          "if": {
+            "properties": {
+              "runner": {
+                "enum": [
+                  "bun",
+                  "vitest",
+                  "storybook_vitest",
+                  "playwright"
+                ]
+              }
+            },
+            "required": [
+              "runner"
+            ]
+          },
+          "then": {
+            "required": [
+              "include"
+            ],
+            "properties": {
+              "include": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
